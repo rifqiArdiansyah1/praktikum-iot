@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "author": "Praktikum Embedded System",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -120,
+      "left": -140,
+      "attrs": { "temperature": "28", "humidity": "60" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-green",
+      "top": -80,
+      "left": 180,
+      "attrs": { "color": "green", "label": "NORMAL" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r-green",
+      "top": -40,
+      "left": 110,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led-red",
+      "top": 20,
+      "left": 180,
+      "attrs": { "color": "red", "label": "ALARM" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r-red",
+      "top": 60,
+      "left": 110,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 150,
+      "left": 130,
+      "attrs": { "volume": "0.2" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    
+    [ "esp:3V3", "dht:VCC", "red", [ "v-30", "h-70" ] ],
+    [ "esp:GND.1", "dht:GND", "black", [ "v-20", "h-60" ] ],
+    [ "esp:15", "dht:SDA", "blue", [ "v-10", "h-50" ] ],
+
+    [ "esp:2", "r-green:1", "green", [ "h20" ] ],
+    [ "r-green:2", "led-green:A", "green", [ "h20" ] ],
+    [ "led-green:C", "esp:GND.2", "black", [ "v20", "h-80" ] ],
+
+    [ "esp:4", "r-red:1", "orange", [ "h20" ] ],
+    [ "r-red:2", "led-red:A", "orange", [ "h20" ] ],
+    [ "led-red:C", "esp:GND.2", "black", [ "v20", "h-80" ] ],
+
+    [ "esp:5", "buzzer:2", "purple", [ "h40", "v50" ] ],
+    [ "buzzer:1", "esp:GND.2", "black", [ "v20", "h-70" ] ]
+  ],
+  "dependencies": {}
+}
