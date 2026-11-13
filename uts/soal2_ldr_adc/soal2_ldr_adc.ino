@@ -3,28 +3,35 @@
  * UTS PRAKTIKUM EMBEDDED SYSTEM - SOAL 2
  * ==============================================================================
  * Judul     : Pembacaan Sensor Analog LDR dan Pengolahan Data ADC 12-Bit
- * Komponen  : ESP32 DevKit, 1x LDR (Photoresistor), 1x Resistor 10 kOhm
+ * Komponen  : ESP32 DevKit, 1x Modul Sensor LDR (Wokwi Photoresistor Sensor)
  * Pinout    : 
- *   - LDR Pin 1        -> 3V3 ESP32
- *   - LDR Pin 2        -> Node Tengah (Terhubung ke GPIO 34 & Resistor 10k Pin 1)
- *   - Resistor 10k Pin 2 -> GND ESP32
- *   - Output Divider   -> GPIO 34 (ADC1_CH6 - Input Only)
+ *   - LDR VCC   -> 3V3 ESP32
+ *   - LDR GND   -> GND ESP32
+ *   - LDR AO    -> GPIO 34 ESP32 (ADC1_CH6 - Input Only)
  *
  * Logika Pengolahan ADC:
  *   1. Nilai ADC mentah ESP32 beresolusi 12-bit dengan rentang 0 hingga 4095.
- *   2. Karakteristik Rangkaian Voltage Divider (LDR sisi 3V3, Resistor 10k sisi GND):
- *      - Terang : Hambatan LDR turun -> Tegangan GPIO 34 naik -> Nilai ADC mendekati 4095.
- *      - Gelap  : Hambatan LDR naik  -> Tegangan GPIO 34 turun -> Nilai ADC mendekati 0.
- *   3. Konversi Persentase Kegelapan (0% - 100%):
- *      - Persentase Kegelapan (%) = ((4095 - rawADC) / 4095.0) * 100.0%
- *        * rawADC = 4095 -> Kegelapan 0.0% (Sangat Terang)
- *        * rawADC = 0    -> Kegelapan 100.0% (Gelap Gulita)
+ *   2. Karakteristik Modul Sensor LDR Wokwi (wokwi-photoresistor-sensor):
+ *      - Terang (High Lux) -> Resistansi LDR kecil -> Tegangan AO rendah (~0.04V - 0.2V) -> ADC mendekati 0.
+ *      - Gelap (Low Lux)   -> Resistansi LDR besar -> Tegangan AO tinggi (~3.3V)        -> ADC mendekati 4095.
+ *   3. Konversi Persentase Intensitas Kegelapan (0% - 100%):
+ *      - Persentase Kegelapan (%) = (rawADC / 4095.0) * 100.0%
+ *        * rawADC = 4095 -> Kegelapan 100.0% (Kondisi Gelap Gulita)
+ *        * rawADC = 0    -> Kegelapan 0.0%   (Kondisi Sangat Terang)
+ *      (Catatan: Disediakan flag IS_WOKWI_MODULE untuk menyesuaikan jika menggunakan rangkaian divider terbalik)
  *   4. Menampilkan data telemetri ke Serial Monitor setiap 1 detik secara non-blocking (millis()).
  * ==============================================================================
  */
 
+#include <Arduino.h>
+
 // Definisi Pin Analog LDR
 const int PIN_LDR = 34; // GPIO 34 (ADC1 Channel 6)
+
+// Konfigurasi Rangkaian Voltage Divider:
+// true  : Modul Sensor LDR Wokwi (Nilai ADC naik seiring semakin gelapnya ruangan)
+// false : Rangkaian divider konvensional LDR ke 3.3V dan R 10k ke GND (Nilai ADC turun saat gelap)
+const bool IS_WOKWI_MODULE = true;
 
 // Penjadwalan Waktu Non-blocking
 unsigned long lastReadTime = 0;
@@ -64,11 +71,16 @@ void loop() {
     float voltage = (rawADC / 4095.0) * 3.3;
 
     // b. Konversi ke persentase intensitas kegelapan (0% - 100%)
-    // Pada rangkaian pembagi tegangan (LDR ke 3.3V, R 10k ke GND):
-    // Nilai ADC tinggi = Terang, Nilai ADC rendah = Gelap.
-    float darknessPercentage = ((4095.0 - rawADC) / 4095.0) * 100.0;
+    float darknessPercentage;
+    if (IS_WOKWI_MODULE) {
+      // Pada sensor Wokwi: ADC tinggi saat gelap, ADC rendah saat terang
+      darknessPercentage = (rawADC / 4095.0) * 100.0;
+    } else {
+      // Pada divider LDR pull-up ke 3.3V
+      darknessPercentage = ((4095.0 - rawADC) / 4095.0) * 100.0;
+    }
 
-    // Pastikan nilai berada di batas aman 0.0% - 100.0%
+    // Pastikan nilai berada di rentang 0.0% - 100.0%
     darknessPercentage = constrain(darknessPercentage, 0.0, 100.0);
 
     // Identifikasi deskripsi kondisi pencahayaan

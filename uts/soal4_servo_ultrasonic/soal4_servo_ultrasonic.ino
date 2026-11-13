@@ -6,21 +6,22 @@
  * Komponen  : ESP32 DevKit, 1x Motor Servo SG90, 1x Sensor Ultrasonik HC-SR04
  * Pinout    : 
  *   - Servo Signal (PWM) -> GPIO 18
- *   - Servo VCC          -> 5V / Vin (atau 3V3)
- *   - Servo GND          -> GND
+ *   - Servo V+           -> 5V ESP32
+ *   - Servo GND          -> GND ESP32
  *   - HC-SR04 Trig       -> GPIO 5
  *   - HC-SR04 Echo       -> GPIO 17
- *   - HC-SR04 VCC        -> 5V (atau 3V3 pada modul 3.3V kompatibel)
- *   - HC-SR04 GND        -> GND
+ *   - HC-SR04 VCC        -> 5V ESP32
+ *   - HC-SR04 GND        -> GND ESP32
  *
  * Logika Pengendalian Palang:
  *   a. Mengukur jarak rintangan di depan sensor menggunakan HC-SR04.
  *   b. Jarak < 10.0 cm  : Kendaraan/objek mendekat -> Servo bergerak ke sudut 90° (Palang Terbuka).
  *   c. Jarak >= 10.0 cm : Area bebas / objek menjauh -> Servo kembali ke sudut 0° (Palang Tertutup).
- *   d. Menggunakan library ESP32Servo yang optimal untuk arsitektur ESP32.
+ *   d. Menggunakan library ESP32Servo yang optimal untuk arsitektur timer ESP32.
  * ==============================================================================
  */
 
+#include <Arduino.h>
 #include <ESP32Servo.h>
 
 // Definisi Pin Periferal
@@ -35,7 +36,7 @@ const float AMBANG_JARAK_BUKA = 10.0; // Batas jarak dalam centimeter (cm)
 Servo barrierServo;
 
 // Variabel Status Palang
-int currentAngle = -1; // -1 menandakan belum diinisialisasi
+int currentAngle = -1; // -1 menandakan status belum diinisialisasi
 unsigned long lastMeasureTime = 0;
 const unsigned long INTERVAL_UKUR = 200; // Pengukuran dilakukan setiap 200 ms untuk respon cepat
 
@@ -75,9 +76,6 @@ void setup() {
   pinMode(PIN_ECHO, INPUT);
 
   // Inisialisasi Motor Servo SG90 pada GPIO 18
-  // Standard pulse width SG90: 500 µs (0°) hingga 2400 µs (180°) pada 50 Hz
-  ESP32PWM::allocateTimer(0);
-  barrierServo.setPeriodHertz(50);
   barrierServo.attach(PIN_SERVO, 500, 2400);
 
   // Posisi awal: Palang Tertutup (0°)

@@ -7,12 +7,13 @@
  * 
  * 1. Soal 1 : Kontrol Kecerahan LED PWM (GPIO 16) dengan Push Button (GPIO 4) + Debouncing
  * 2. Soal 2 : Akuisisi Sensor Cahaya LDR (GPIO 34 ADC 12-bit) & Konversi % Kegelapan (tiap 1s)
- * 3. Soal 3 : Siklus Otomatis Relay (GPIO 19) ON 5s & OFF 3s (Active HIGH/LOW)
+ * 3. Soal 3 : Siklus Otomatis Relay (GPIO 19) ON 5s & OFF 3s (Active LOW/HIGH)
  * 4. Soal 4 : Palang Pintu Otomatis Motor Servo SG90 (GPIO 18) + HC-SR04 (Trig: 5, Echo: 17)
  * 5. Soal 5 : IoT Telemetri MQTT (Publish LDR tiap 5s & Subscribe Kontrol Lampu ON/OFF)
  * ==============================================================================
  */
 
+#include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
@@ -23,7 +24,7 @@ const char* NIM = "rifqi"; // Sesuaikan dengan NIM Anda
 
 // ---------------------- DEFINISI PINOUT SELURUH SISTEM --------------
 const int PIN_LED_PWM     = 16; // Soal 1: LED PWM
-const int PIN_BUTTON      = 4;  // Soal 1: Push Button
+const int PIN_BUTTON      = 4;  // Soal 1: Push Button (INPUT_PULLUP)
 const int PIN_LDR         = 34; // Soal 2 & 5: Sensor Cahaya LDR (ADC1_CH6)
 const int PIN_RELAY       = 19; // Soal 3 & 5: Modul Relay
 const int PIN_SERVO       = 18; // Soal 4: Sinyal PWM Servo SG90
@@ -54,7 +55,8 @@ float currentDarknessPct = 0.0;
 int currentRawADC = 0;
 
 // ---------------------- SOAL 3: VARIABEL RELAY TIMING ---------------
-const bool IS_ACTIVE_LOW = false;
+// Modul relay Wokwi default berkarakteristik Active LOW
+const bool IS_ACTIVE_LOW = true;
 const int RELAY_ON  = IS_ACTIVE_LOW ? LOW  : HIGH;
 const int RELAY_OFF = IS_ACTIVE_LOW ? HIGH : LOW;
 
@@ -170,8 +172,6 @@ void setup() {
   // 4. Setup Soal 4 (Servo & HC-SR04)
   pinMode(PIN_TRIG, OUTPUT);
   pinMode(PIN_ECHO, INPUT);
-  ESP32PWM::allocateTimer(0);
-  barrierServo.setPeriodHertz(50);
   barrierServo.attach(PIN_SERVO, 500, 2400);
   barrierServo.write(0);
   servoAngle = 0;
@@ -230,7 +230,7 @@ void loop() {
   if (now - lastLdrPrintTime >= INTERVAL_LDR_PRINT) {
     lastLdrPrintTime = now;
     currentRawADC = analogRead(PIN_LDR);
-    currentDarknessPct = constrain(((4095.0 - currentRawADC) / 4095.0) * 100.0, 0.0, 100.0);
+    currentDarknessPct = constrain((currentRawADC / 4095.0) * 100.0, 0.0, 100.0);
     Serial.printf("[SOAL 2 - LDR ADC] Raw ADC: %4d | Kegelapan: %5.1f %%\n",
                   currentRawADC, currentDarknessPct);
   }
@@ -278,7 +278,13 @@ void loop() {
   // ---------------------------------------------------------------------------
   if (now - lastMqttPublishTime >= INTERVAL_MQTT_PUB) {
     lastMqttPublishTime = now;
-    StaticJsonDocument<256> doc;
+    
+    #if defined(ARDUINOJSON_VERSION_MAJOR) && ARDUINOJSON_VERSION_MAJOR >= 7
+      JsonDocument doc;
+    #else
+      StaticJsonDocument<256> doc;
+    #endif
+
     doc["nim"]           = NIM;
     doc["uptime_sec"]    = now / 1000;
     doc["raw_adc"]       = currentRawADC;

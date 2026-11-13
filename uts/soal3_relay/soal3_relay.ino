@@ -3,14 +3,14 @@
  * UTS PRAKTIKUM EMBEDDED SYSTEM - SOAL 3
  * ==============================================================================
  * Judul     : Pengendalian Sakelar Beban Daya Menggunakan Modul Relay
- * Komponen  : ESP32 DevKit, 1x Modul Relay 5V/3.3V, 1x Lampu Beban (Lightbulb/LED)
+ * Komponen  : ESP32 DevKit, 1x Modul Relay (Wokwi Relay Module), 1x Lampu Beban (LED)
  * Pinout    : 
- *   - Relay VCC        -> Vin / 5V (atau 3V3) ESP32
+ *   - Relay VCC        -> 5V (atau 3V3) ESP32
  *   - Relay GND        -> GND ESP32
  *   - Relay IN (Signal)-> GPIO 19 ESP32
  *   - Terminal Relay   : 
- *     * COM (Common)        -> Sumber Daya Lampu
- *     * NO (Normally Open)  -> Beban Lampu (+)
+ *     * COM (Common)        -> Sumber Daya (3V3 ESP32)
+ *     * NO (Normally Open)  -> Beban Lampu (+) melalui Resistor 220 Ohm
  *
  * Pola Kerja Waktu:
  *   - Relay Aktif (Lampu Menyala) selama 5 detik (5000 ms).
@@ -18,23 +18,23 @@
  *   - Berjalan secara siklus kontinu (looping) menggunakan non-blocking timer (millis()).
  *
  * Penjelasan Soal 3.b (Logika Pemicuan Relay - Active LOW vs Active HIGH):
- *   1. Modul Relay Active LOW:
+ *   1. Modul Relay Active LOW (Bawaan Simulator Wokwi & Mayoritas Modul Relay Fisik):
  *      - Relay aktif saat pin kendali (IN) berlogika LOW (0V).
- *      - Rangkaian optocoupler internal terhubung ke VCC, sehingga logika LOW dari
- *        GPIO ESP32 menarik arus (sink current) ke ground, menyalakan transistor,
- *        menginduksi koil elektromagnetik, dan menutup sakelar COM - NO.
- *      - Saat pin IN berlogika HIGH (3.3V), optocoupler mati dan sakelar terbuka.
+ *      - Rangkaian input optocoupler/transistor NPN internal terpicu saat pin IN ditarik
+ *        ke Ground (sink current), mengalirkan arus ke koil elektromagnetik dan menutup
+ *        sakelar terminal COM - NO (Lampu Menyala).
+ *      - Saat pin IN berlogika HIGH (3.3V/5V), koil kehilangan daya dan sakelar kembali
+ *        ke posisi NC (Lampu Padam).
  *   2. Modul Relay Active HIGH:
- *      - Relay aktif saat pin kendali (IN) berlogika HIGH (3.3V).
- *      - GPIO mengalirkan arus (source current) untuk memicu transistor penggerak koil.
+ *      - Relay aktif saat pin kendali (IN) berlogika HIGH (3.3V/5V), di mana arus keluar
+ *        dari GPIO (source current) untuk menyalakan transistor PNP / driver koil.
  *   3. Penentuan dalam Kode ini:
- *      - Pada simulator Wokwi (wokwi-relay-module), relay secara bawaan merespon
- *        logika HIGH untuk menghubungkan terminal COM ke NO (Active HIGH).
- *      - Untuk fleksibilitas implementasi hardware riil, digunakan konstanta:
- *        `RELAY_ON` dan `RELAY_OFF`. Jika menggunakan modul fisik tipe Active LOW,
- *        cukup ubah nilai `IS_ACTIVE_LOW` menjadi true.
+ *      - Parameter `IS_ACTIVE_LOW = true` disetel agar sinkron dengan karakteristik
+ *        bawaan modul relay Wokwi (wokwi-relay-module).
  * ==============================================================================
  */
+
+#include <Arduino.h>
 
 // Definisi Pin Relay
 const int PIN_RELAY = 19;
@@ -42,9 +42,8 @@ const int PIN_RELAY = 19;
 // -----------------------------------------------------------------------------
 // KONFIGURASI LOGIKA RELAY (Jawaban Soal 3.b)
 // -----------------------------------------------------------------------------
-// Ubah ke true jika menggunakan modul relay fisik yang bersifat Active LOW.
-// Nilai false digunakan untuk simulator Wokwi atau modul Active HIGH.
-const bool IS_ACTIVE_LOW = false; 
+// Modul relay Wokwi dan modul relay fisik pada umumnya berkarakteristik Active LOW.
+const bool IS_ACTIVE_LOW = true; 
 
 const int RELAY_ON  = IS_ACTIVE_LOW ? LOW  : HIGH;
 const int RELAY_OFF = IS_ACTIVE_LOW ? HIGH : LOW;
@@ -69,7 +68,8 @@ void setup() {
 
   // Tampilkan informasi logika pemicuan yang digunakan
   Serial.printf("[Konfigurasi Logika] Karakteristik Relay: %s\n", 
-                IS_ACTIVE_LOW ? "Active LOW (LOW = ON, HIGH = OFF)" : "Active HIGH (HIGH = ON, LOW = OFF)");
+                IS_ACTIVE_LOW ? "Active LOW (LOW = ON / COM-NO, HIGH = OFF / COM-NC)" 
+                              : "Active HIGH (HIGH = ON / COM-NO, LOW = OFF / COM-NC)");
 
   // Mulai siklus: Langsung aktifkan relay (Kondisi Awal: Lampu Menyala)
   digitalWrite(PIN_RELAY, RELAY_ON);

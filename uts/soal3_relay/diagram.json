@@ -11,7 +11,7 @@
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
-    [ "esp:3V3", "relay1:VCC", "red", [ "h20", "v-80" ] ],
+    [ "esp:5V", "relay1:VCC", "red", [ "h20", "v-80" ] ],
     [ "esp:GND.2", "relay1:GND", "black", [ "h30", "v-60" ] ],
     [ "esp:19", "relay1:IN", "blue", [ "h40", "v-40" ] ],
     

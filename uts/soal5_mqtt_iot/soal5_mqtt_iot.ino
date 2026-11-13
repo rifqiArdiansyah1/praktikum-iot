@@ -3,9 +3,9 @@
  * UTS PRAKTIKUM EMBEDDED SYSTEM - SOAL 5
  * ==============================================================================
  * Judul     : Telemetri Sensor Cahaya & Kontrol Jarak Jauh Relay via Protokol MQTT
- * Komponen  : ESP32 DevKit, 1x LDR + R 10k (GPIO 34), 1x Modul Relay + Lampu (GPIO 19)
+ * Komponen  : ESP32 DevKit, 1x Modul Sensor LDR (GPIO 34), 1x Modul Relay + Lampu (GPIO 19)
  * Pinout    : 
- *   - LDR Voltage Divider -> GPIO 34 (ADC1_CH6)
+ *   - LDR AO              -> GPIO 34 (ADC1_CH6)
  *   - Relay IN (Control)  -> GPIO 19
  *
  * Konfigurasi Jaringan & Broker:
@@ -23,20 +23,21 @@
  * ==============================================================================
  */
 
+#include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
 // ---------------------- KONFIGURASI MAHASISWA ----------------------
-// Silakan ganti nilai NIM di bawah ini dengan NIM Anda masing-masing
+// Silakan sesuaikan nilai NIM di bawah ini dengan NIM Anda masing-masing
 const char* NIM = "rifqi"; 
 
 // Definisi Pin Periferal
 const int PIN_LDR   = 34; // Sensor Cahaya LDR (Analog ADC)
 const int PIN_RELAY = 19; // Modul Relay Beban Lampu
 
-// Konfigurasi Logika Modul Relay (Wokwi default: Active HIGH)
-const bool IS_ACTIVE_LOW = false; 
+// Konfigurasi Logika Modul Relay (Wokwi default: Active LOW)
+const bool IS_ACTIVE_LOW = true; 
 const int RELAY_ON  = IS_ACTIVE_LOW ? LOW  : HIGH;
 const int RELAY_OFF = IS_ACTIVE_LOW ? HIGH : LOW;
 
@@ -58,7 +59,7 @@ String topicSubscribeLampu;
 unsigned long lastPublishTime = 0;
 const unsigned long INTERVAL_PUBLISH = 5000;
 
-// Callback: Menangani pesan yang masuk dari topik subscribe
+// Callback: Menangani pesan yang masuk dari broker pada topik subscribe
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
   String message = "";
   for (unsigned int i = 0; i < length; i++) {
@@ -159,7 +160,8 @@ void loop() {
     int rawADC = analogRead(PIN_LDR);
 
     // 2. Konversi ke Persentase Kegelapan (0% - 100%)
-    float darknessPercentage = ((4095.0 - rawADC) / 4095.0) * 100.0;
+    // Sensor Wokwi LDR: nilai ADC tinggi saat gelap, rendah saat terang
+    float darknessPercentage = (rawADC / 4095.0) * 100.0;
     darknessPercentage = constrain(darknessPercentage, 0.0, 100.0);
 
     // Identifikasi Kategori Cahaya
@@ -169,8 +171,13 @@ void loop() {
     else if (darknessPercentage < 75.0) statusCahaya = "Redup";
     else statusCahaya = "Gelap";
 
-    // 3. Susun Payload JSON
-    StaticJsonDocument<256> doc;
+    // 3. Susun Payload JSON (Kompatibel ArduinoJson v6 & v7)
+    #if defined(ARDUINOJSON_VERSION_MAJOR) && ARDUINOJSON_VERSION_MAJOR >= 7
+      JsonDocument doc;
+    #else
+      StaticJsonDocument<256> doc;
+    #endif
+
     doc["nim"]              = NIM;
     doc["uptime_sec"]       = currentMillis / 1000;
     doc["raw_adc"]          = rawADC;

@@ -12,14 +12,16 @@
  *
  * Logika Kerja:
  *   - Tingkat kecerahan LED bertambah bertingkat setiap tombol ditekan:
- *     0: Padam (0%   - Duty: 0)
- *     1: Redup (30%  - Duty: 77)
- *     2: Sedang (70% - Duty: 179)
- *     3: Terang Maksimal (100% - Duty: 255)
- *     -> Kembali ke Padam pada penekanan berikutnya.
+ *     Level 0: Padam (0%   - Duty: 0)
+ *     Level 1: Redup (30%  - Duty: 76)
+ *     Level 2: Sedang (70% - Duty: 178)
+ *     Level 3: Terang Maksimal (100% - Duty: 255)
+ *     -> Kembali ke Padam pada penekanan berikutnya secara sirkular.
  *   - Dilengkapi penanganan software debouncing berbasis timer non-blocking (millis()).
  * ==============================================================================
  */
+
+#include <Arduino.h>
 
 // Definisi Pin
 const int PIN_LED = 16;
@@ -33,8 +35,8 @@ const int PWM_RESOLUTION = 8;    // Resolusi 8-bit (Rentang nilai duty cycle: 0 
 // Definisi Nilai Duty Cycle Kecerahan (8-bit: 0 - 255)
 const int DUTY_LEVELS[4] = {
   0,                              // 0%   - Padam
-  (int)(255 * 0.30),              // 30%  - Redup (76/77)
-  (int)(255 * 0.70),              // 70%  - Sedang (178/179)
+  (int)(255 * 0.30),              // 30%  - Redup (76)
+  (int)(255 * 0.70),              // 70%  - Sedang (178)
   255                             // 100% - Terang Maksimal
 };
 
@@ -49,12 +51,12 @@ const char* LEVEL_NAMES[4] = {
 int currentLevel = 0;            // Status tingkat kecerahan saat ini (0 - 3)
 
 // Variabel Debouncing Tombol
-int buttonState = HIGH;          // Nilai stabil tombol saat ini (INPUT_PULLUP: HIGH = dilepas, LOW = ditekan)
+int buttonState = HIGH;          // Nilai stabil tombol saat ini (INPUT_PULLUP: HIGH = lepas, LOW = ditekan)
 int lastRawButtonReading = HIGH; // Nilai pembacaan mentah tombol sebelumnya
 unsigned long lastDebounceTime = 0;
-const unsigned long DEBOUNCE_DELAY = 50; // Jeda debouncing 50 ms
+const unsigned long DEBOUNCE_DELAY = 50; // Jeda kestabilan debouncing 50 ms
 
-// Fungsi untuk menerapkan duty cycle ke LED (Kompatibel dengan semua versi ESP32 Core)
+// Fungsi untuk menerapkan nilai duty cycle ke pin LED
 void setLedBrightness(int duty) {
   #if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
     ledcWrite(PIN_LED, duty);
