@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "author": "UTS Embedded System - Proyek Terpadu All-in-One",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    
+    { "type": "wokwi-led", "id": "led-pwm", "top": -140, "left": 180, "attrs": { "color": "red", "label": "LED PWM (G16)" } },
+    { "type": "wokwi-resistor", "id": "r-pwm", "top": -100, "left": 120, "attrs": { "value": "220" } },
+    { "type": "wokwi-pushbutton", "id": "btn1", "top": -120, "left": -120, "attrs": { "color": "green", "label": "BUTTON (G4)" } },
+
+    { "type": "wokwi-photoresistor", "id": "ldr1", "top": -40, "left": -160, "attrs": {} },
+    { "type": "wokwi-resistor", "id": "r-ldr", "top": 40, "left": -160, "attrs": { "value": "10000" } },
+
+    { "type": "wokwi-relay-module", "id": "relay1", "top": -40, "left": 180, "attrs": {} },
+    { "type": "wokwi-led", "id": "lamp1", "top": 80, "left": 250, "attrs": { "color": "yellow", "label": "LAMPU RELAY" } },
+    { "type": "wokwi-resistor", "id": "r-lamp", "top": 50, "left": 200, "attrs": { "value": "220" } },
+
+    { "type": "wokwi-hc-sr04", "id": "sonar", "top": 120, "left": -140, "attrs": { "distance": "30" } },
+    { "type": "wokwi-servo", "id": "servo1", "top": 160, "left": 180, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "esp:16", "r-pwm:1", "orange", [ "h20" ] ],
+    [ "r-pwm:2", "led-pwm:A", "orange", [ "h20" ] ],
+    [ "led-pwm:C", "esp:GND.2", "black", [ "v30", "h-80" ] ],
+    [ "esp:4", "btn1:1.l", "blue", [ "h-20" ] ],
+    [ "btn1:2.l", "esp:GND.1", "black", [ "h-20", "v40" ] ],
+
+    [ "esp:3V3", "ldr1:1", "red", [ "v-30", "h-80" ] ],
+    [ "ldr1:2", "r-ldr:1", "green", [ "v20" ] ],
+    [ "ldr1:2", "esp:34", "blue", [ "h40", "v40" ] ],
+    [ "r-ldr:2", "esp:GND.1", "black", [ "v20", "h60" ] ],
+
+    [ "esp:3V3", "relay1:VCC", "red", [ "h20", "v-40" ] ],
+    [ "esp:GND.2", "relay1:GND", "black", [ "h30", "v-30" ] ],
+    [ "esp:19", "relay1:IN", "purple", [ "h40", "v-20" ] ],
+    [ "esp:3V3", "relay1:COM", "red", [ "h50", "v-60" ] ],
+    [ "relay1:NO", "r-lamp:1", "orange", [ "v30" ] ],
+    [ "r-lamp:2", "lamp1:A", "orange", [ "h20" ] ],
+    [ "lamp1:C", "esp:GND.2", "black", [ "v30", "h-120" ] ],
+
+    [ "esp:5V", "sonar:VCC", "red", [ "v40", "h-60" ] ],
+    [ "esp:5", "sonar:TRIG", "blue", [ "v50", "h-50" ] ],
+    [ "esp:17", "sonar:ECHO", "green", [ "v60", "h-40" ] ],
+    [ "esp:GND.1", "sonar:GND", "black", [ "v70", "h-80" ] ],
+
+    [ "esp:18", "servo1:PWM", "purple", [ "h30", "v30" ] ],
+    [ "esp:5V", "servo1:V+", "red", [ "h40", "v20" ] ],
+    [ "esp:GND.2", "servo1:GND", "black", [ "h20", "v40" ] ]
+  ],
+  "dependencies": {}
+}

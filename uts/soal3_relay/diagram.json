@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "author": "UTS Embedded System - Soal 3",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-relay-module", "id": "relay1", "top": -80, "left": 180, "attrs": {} },
+    { "type": "wokwi-led", "id": "lamp1", "top": 120, "left": 220, "attrs": { "color": "yellow", "label": "LAMPU BEBAN" } },
+    { "type": "wokwi-resistor", "id": "r1", "top": 80, "left": 160, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:3V3", "relay1:VCC", "red", [ "h20", "v-80" ] ],
+    [ "esp:GND.2", "relay1:GND", "black", [ "h30", "v-60" ] ],
+    [ "esp:19", "relay1:IN", "blue", [ "h40", "v-40" ] ],
+    
+    [ "esp:3V3", "relay1:COM", "red", [ "h50", "v-100" ] ],
+    [ "relay1:NO", "r1:1", "orange", [ "v40" ] ],
+    [ "r1:2", "lamp1:A", "orange", [ "h20" ] ],
+    [ "lamp1:C", "esp:GND.2", "black", [ "v30", "h-120" ] ]
+  ],
+  "dependencies": {}
+}
